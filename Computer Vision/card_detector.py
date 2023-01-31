@@ -396,3 +396,33 @@ def flattener(image, pts, w, h):
 
     return warp
 
+
+img = cv2.imread('example_cards/ace_of_spades3.jpg', cv2.IMREAD_COLOR)
+train_ranks = load_ranks('card_imgs/')
+train_suits = load_suits('card_imgs/')
+
+print(len(train_ranks))
+
+plt.imshow(img)
+plt.show()
+
+
+def detect_card(image):
+    pre_proc = preprocess_image(image)
+    plt.imshow(pre_proc)
+    plt.show()
+    cnts_sort, cnt_is_card = find_cards(pre_proc)
+    card = preprocess_card(cnts_sort[0], image)
+    card.best_rank_match, card.best_suit_match, card.rank_diff, card.suit_diff = match_card(card, train_ranks,
+                                                                                            train_suits)
+
+    print(card.best_rank_match)
+    print(card.best_suit_match)
+
+    image = draw_results(image, card)
+    # cv2.imshow("Card Detector",img)
+    plt.imshow(image)
+    plt.show()
+
+
+detect_card(img)
