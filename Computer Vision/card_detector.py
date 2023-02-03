@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 ### Constants ###
 
 # Adaptive threshold levels
-BKG_THRESH = 45
+BKG_THRESH = 70
 CARD_THRESH = 30
 
 # Width and height of card corner, where rank and suit are
@@ -397,7 +397,8 @@ def flattener(image, pts, w, h):
     return warp
 
 
-img = cv2.imread('example_cards/ace_of_spades3.jpg', cv2.IMREAD_COLOR)
+#img = cv2.imread('example_cards/ace_of_spades3.jpg', cv2.IMREAD_COLOR)
+img = cv2.imread('example_cards/adjustedcard3.jpg', cv2.IMREAD_COLOR)
 train_ranks = load_ranks('card_imgs/')
 train_suits = load_suits('card_imgs/')
 
