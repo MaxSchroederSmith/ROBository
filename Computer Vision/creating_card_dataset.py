@@ -12,13 +12,19 @@ from glob import glob
 import imgaug as ia
 from imgaug import augmenters as iaa
 from shapely.geometry import Polygon
+mpl_use('MacOSX')
+
+
+#
+# Report the measures in mm
+#
 
 cardW=57
 cardH=87
 cornerXmin=2
-cornerXmax=10.5
-cornerYmin=2.5
-cornerYmax=23
+cornerXmax=9
+cornerYmin=5.5
+cornerYmax=24.5
 
 # We convert the measures from mm to pixels: multiply by an arbitrary factor 'zoom'
 # You shouldn't need to change this
@@ -29,6 +35,11 @@ cornerXmin=int(cornerXmin*zoom)
 cornerXmax=int(cornerXmax*zoom)
 cornerYmin=int(cornerYmin*zoom)
 cornerYmax=int(cornerYmax*zoom)
+
+
+#
+# Some convenient functions
+#
 
 def display_img(img,polygons=[],channels="bgr",size=9):
     """
@@ -88,7 +99,12 @@ def give_me_filename(dirname, suffixes, prefix=""):
     else:
         return fnames
 
-data_dir="data" # Directory that will contain all kinds of data (the data we download and the data we generate)
+
+#
+# Define global variables
+#
+
+data_dir="dataset_data" # Directory that will contain all kinds of data (the data we download and the data we generate)
 
 if not os.path.isdir(data_dir):
     os.makedirs(data_dir)
@@ -97,7 +113,7 @@ card_suits=['s','h','d','c']
 card_values=['A','K','Q','J','10','9','8','7','6','5','4','3','2']
 
 # Pickle file containing the background images from the DTD
-backgrounds_pck_fn=data_dir+"/backgrounds.pck"
+# backgrounds_pck_fn=data_dir+"/backgrounds.pck"
 
 # Pickle file containing the card images
 cards_pck_fn=data_dir+"/cards.pck"
@@ -114,6 +130,11 @@ refCornerHL=np.array([[cornerXmin,cornerYmin],[cornerXmax,cornerYmin],[cornerXma
 refCornerLR=np.array([[cardW-cornerXmax,cardH-cornerYmax],[cardW-cornerXmin,cardH-cornerYmax],[cardW-cornerXmin,cardH-cornerYmin],[cardW-cornerXmax,cardH-cornerYmin]],dtype=np.float32)
 refCorners=np.array([refCornerHL,refCornerLR])
 
+
+#
+# Extraction of the cards from pictures
+#
+
 bord_size=2 # bord_size alpha=0
 alphamask=np.ones((cardH,cardW),dtype=np.uint8)*255
 cv2.rectangle(alphamask,(0,0),(cardW-1,cardH-1),0,bord_size)
@@ -124,6 +145,10 @@ cv2.line(alphamask,(cardW-bord_size*3,cardH),(cardW,cardH-bord_size*3),0,bord_si
 plt.figure(figsize=(10,10))
 plt.imshow(alphamask)
 
+
+#
+# Function extract_card
+#
 
 def varianceOfLaplacian(img):
     """
@@ -224,7 +249,7 @@ def extract_card(img, output_fn=None, min_focus=120, debug=False):
 
 # Test on one image
 debug=False
-img=cv2.imread("test/scene.png")
+img=cv2.imread("dataset_data/card_dataset/res_medium_size_medium/card1.jpg")
 display_img(img)
 valid,card=extract_card(img,"test/extracted_card.png", debug=debug)
 if valid:
@@ -233,54 +258,7 @@ if debug:
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
-
-def extract_cards_from_video(video_fn, output_dir=None, keep_ratio=5, min_focus=120, debug=False):
-    """
-        Extract cards from media file 'video_fn'
-        If 'output_dir' is specified, the cards are saved in 'output_dir'.
-        One file per card with a random file name
-        Because 2 consecutives frames are probably very similar, we don't use every frame of the video,
-        but only one every 'keep_ratio' frames
-
-        Returns list of extracted images
-    """
-    if not os.path.isfile(video_fn):
-        print(f"Video file {video_fn} does not exist !!!")
-        return -1, []
-    if output_dir is not None and not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-
-    cap = cv2.VideoCapture(video_fn)
-
-    frame_nb = 0
-    imgs_list = []
-    while True:
-        ret, img = cap.read()
-        if not ret: break
-        # Work on every 'keep_ratio' frames
-        if frame_nb % keep_ratio == 0:
-            if output_dir is not None:
-                output_fn = give_me_filename(output_dir, "png")
-            else:
-                output_fn = None
-            valid, card_img = extract_card(img, output_fn, min_focus=min_focus, debug=debug)
-            if debug:
-                k = cv2.waitKey(1)
-                if k == 27: break
-            if valid:
-                imgs_list.append(card_img)
-        frame_nb += 1
-
-    if debug:
-        cap.release()
-        cv2.destroyAllWindows()
-
-    return imgs_list
-
-# Test card extraction from a video
-imgs=extract_cards_from_video("test/2c.avi",output_dir="test/2c",debug=True)
-print("Nb images extracted:",len(imgs))
-
+"""
 video_dir = "data/video"
 extension = "avi"
 imgs_dir = "data/cards"
@@ -304,13 +282,13 @@ display_img(cv2.imread(img_fn,cv2.IMREAD_UNCHANGED),polygons=[refCornerHL,refCor
 
 
 def findHull(img, corner=refCornerHL, debug="no"):
-    """
+    ""
         Find in the zone 'corner' of image 'img' and return, the convex hull delimiting
         the value and suit symbols
         'corner' (shape (4,2)) is an array of 4 points delimiting a rectangular zone,
         takes one of the 2 possible values : refCornerHL or refCornerLR
         debug=
-    """
+    ""
 
     kernel = np.ones((3, 3), np.uint8)
     corner = corner.astype(np.int)
@@ -472,7 +450,7 @@ _=cards.get_random(display=True)
 # Display a random Ace of spades
 #_=cards.get_random("As",display=True)
 
-xml_body_1="""<annotation>
+xml_body_1=""<annotation>
         <folder>FOLDER</folder>
         <filename>{FILENAME}</filename>
         <path>{PATH}</path>
@@ -484,8 +462,8 @@ xml_body_1="""<annotation>
                 <height>{HEIGHT}</height>
                 <depth>3</depth>
         </size>
-"""
-xml_object=""" <object>
+""
+xml_object="" <object>
                 <name>{CLASS}</name>
                 <pose>Unspecified</pose>
                 <truncated>0</truncated>
@@ -497,9 +475,9 @@ xml_object=""" <object>
                         <ymax>{YMAX}</ymax>
                 </bndbox>
         </object>
-"""
-xml_body_2="""</annotation>        
-"""
+""
+xml_body_2=""</annotation>        
+""
 
 def create_voc_xml(xml_file, img_file,listbba,display=False):
     with open(xml_file,"w") as f:
@@ -523,17 +501,17 @@ decalY3 = int(imgH / 2 - cardH)
 
 
 def kps_to_polygon(kps):
-    """
+    ""
         Convert imgaug keypoints to shapely polygon
-    """
+    ""
     pts = [(kp.x, kp.y) for kp in kps]
     return Polygon(pts)
 
 
 def hull_to_kps(hull, decalX=decalX, decalY=decalY):
-    """
+    ""
         Convert hull to imgaug keypoints
-    """
+    ""
     # hull is a cv2.Contour, shape : Nx1x2
     kps = [ia.Keypoint(x=p[0] + decalX, y=p[1] + decalY) for p in hull.reshape(-1, 2)]
     kps = ia.KeypointsOnImage(kps, shape=(imgH, imgW, 3))
@@ -541,9 +519,9 @@ def hull_to_kps(hull, decalX=decalX, decalY=decalY):
 
 
 def kps_to_BB(kps):
-    """
+    ""
         Determine imgaug bounding box from imgaug keypoints
-    """
+    ""
     extend = 3  # To make the bounding box a little bit bigger
     kpsx = [kp.x for kp in kps.keypoints]
     minx = max(0, int(min(kpsx) - extend))
@@ -594,10 +572,10 @@ scaleBg = iaa.Scale({"height": imgH, "width": imgW})
 
 
 def augment(img, list_kps, seq, restart=True):
-    """
+    ""
         Apply augmentation 'seq' to image 'img' and keypoints 'list_kps'
         If restart is False, the augmentation has been made deterministic outside the function (used for 3 cards scenario)
-    """
+    ""
     # Make sequence deterministic
     while True:
         if restart:
@@ -812,3 +790,4 @@ for i in tqdm(range(nb_cards_to_generate)):
 
 !python convert_voc_yolo.py data/scenes/val data/cards.names data/val.txt
 #python convert_voc_yolo.py data/scenes/train data/cards.names data/train.txt
+"""
