@@ -22,10 +22,10 @@ mpl_use('MacOSX')
 
 cardW=57
 cardH=87
-cornerXmin=2
-cornerXmax=9
-cornerYmin=5.5
-cornerYmax=24.5
+cornerXmin=3
+cornerXmax=10.7
+cornerYmin=3
+cornerYmax=24
 
 # We convert the measures from mm to pixels: multiply by an arbitrary factor 'zoom'
 # You shouldn't need to change this
@@ -57,8 +57,8 @@ def display_img(img,polygons=[],channels="bgr",size=9):
             img=cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
     fig,ax=plt.subplots(figsize=(size,size))
     ax.set_facecolor((0,0,0))
-    plt.imshow(img)
-    plt.show()
+    cv2.imshow("IMAGE",img)
+    #plt.show()
     for polygon in polygons:
         # An polygon has either shape (n,2),
         # either (n,1,2) if it is a cv2 contour (like convex hull).
@@ -180,7 +180,7 @@ def extract_card(img, output_fn=None, min_focus=120, debug=False):
     gray = cv2.bilateralFilter(gray, 11, 17, 17)
 
     # Edge extraction
-    edge = cv2.Canny(gray, 30, 200)
+    edge = cv2.Canny(gray, 800, 200)
 
     # Find the contours in the edged image
     cnts, _ = cv2.findContours(edge.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -261,7 +261,7 @@ if valid:
 if debug:
     cv2.waitKey(0)
     cv2.destroyAllWindows()
-"""
+
 
 
 
@@ -270,19 +270,33 @@ imgs_dir="dataset_data/card_dataset/res_medium_size_medium"
 imgs_fns=glob(imgs_dir+"/*.jpeg")
 img_fn=random.choice(imgs_fns)
 print(img_fn)
-display_img(cv2.imread(img_fn,cv2.IMREAD_UNCHANGED),polygons=[refCornerHL,refCornerLR])
-cv2.waitKey(0)
-cv2.destroyAllWindows()
+img=cv2.imread(img_fn)
+display_img(img,polygons=[refCornerHL,refCornerLR])
+valid,card=extract_card(img,"extracted_card.png", debug=debug)
+if valid:
+    display_img(card)
+if debug:
+    cv2.waitKey(50)
+    cv2.destroyAllWindows()
+#display_img(cv2.imread(img_fn,cv2.IMREAD_UNCHANGED),polygons=[refCornerHL,refCornerLR])
+
 """
 
+
+#
+# Finding the convex hulls
+#
+
 def findHull(img, corner=refCornerHL, debug="no"):
-    ""
+    """
         Find in the zone 'corner' of image 'img' and return, the convex hull delimiting
-        the value and suit symbols
+        the
+        var = value and suit
+     symbols
         'corner' (shape (4,2)) is an array of 4 points delimiting a rectangular zone,
         takes one of the 2 possible values : refCornerHL or refCornerLR
         debug=
-    ""
+    """
 
     kernel = np.ones((3, 3), np.uint8)
     corner = corner.astype(int)
@@ -303,7 +317,7 @@ def findHull(img, corner=refCornerHL, debug="no"):
     if debug != "no": cv2.imshow("thld", thld)
 
     # Find the contours
-    _, contours, _ = cv2.findContours(thld.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    contours, _ = cv2.findContours(thld.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     min_area = 30  # We will reject contours with small area. TWEAK, 'zoom' dependant
     min_solidity = 0.3  # Reject contours with a low solidity. TWEAK
@@ -340,7 +354,7 @@ def findHull(img, corner=refCornerHL, debug="no"):
         hull = cv2.convexHull(concat_contour)
         hull_area = cv2.contourArea(hull)
         # If the area of the hull is to small or too big, there may be a problem
-        min_hull_area = 940  # TWEAK, deck and 'zoom' dependant
+        min_hull_area = 1500  # TWEAK, deck and 'zoom' dependant
         max_hull_area = 2120  # TWEAK, deck and 'zoom' dependant
         if hull_area < min_hull_area or hull_area > max_hull_area:
             ok = False
@@ -374,12 +388,14 @@ def findHull(img, corner=refCornerHL, debug="no"):
 # Test find_hull on a random card image
 # debug = "no" or "pause_always" or "pause_on_pb"
 # If debug!="no", you may have to press a key to continue execution after pause
-debug="no"
-imgs_dir="data/cards"
-imgs_fns=glob(imgs_dir+"/*/*.png")
+debug="pause_always"
+imgs_dir="dataset_data/card_dataset/res_medium_size_medium"
+imgs_fns=glob(imgs_dir+"/*.jpeg")
 img_fn=random.choice(imgs_fns)
 print(img_fn)
-img=cv2.imread(img_fn,cv2.IMREAD_UNCHANGED)
+img=cv2.imread(img_fn)
+valid,card=extract_card(img,"extracted_card.png", debug=debug)
+img=cv2.imread("extracted_card.png")
 
 hullHL=findHull(img,refCornerHL,debug=debug)
 hullLR=findHull(img,refCornerLR,debug=debug)
@@ -387,6 +403,8 @@ display_img(img,[refCornerHL,refCornerLR,hullHL,hullLR])
 
 if debug!="no": cv2.destroyAllWindows()
 
+
+"""
 imgs_dir="data/cards"
 
 cards={}
