@@ -7,6 +7,7 @@ import os
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import matplotlib.patches as patches
+from matplotlib import use as mpl_use
 import pickle
 from glob import glob
 import imgaug as ia
@@ -56,7 +57,8 @@ def display_img(img,polygons=[],channels="bgr",size=9):
             img=cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
     fig,ax=plt.subplots(figsize=(size,size))
     ax.set_facecolor((0,0,0))
-    ax.imshow(img)
+    plt.imshow(img)
+    plt.show()
     for polygon in polygons:
         # An polygon has either shape (n,2),
         # either (n,1,2) if it is a cv2 contour (like convex hull).
@@ -181,7 +183,7 @@ def extract_card(img, output_fn=None, min_focus=120, debug=False):
     edge = cv2.Canny(gray, 30, 200)
 
     # Find the contours in the edged image
-    _, cnts, _ = cv2.findContours(edge.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    cnts, _ = cv2.findContours(edge.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     # We suppose that the contour with largest area corresponds to the contour delimiting the card
     cnt = sorted(cnts, key=cv2.contourArea, reverse=True)[0]
@@ -192,7 +194,7 @@ def extract_card(img, output_fn=None, min_focus=120, debug=False):
     # Both areas sould be very close
     rect = cv2.minAreaRect(cnt)
     box = cv2.boxPoints(rect)
-    box = np.int0(box)
+    box = np.intp(box)
     areaCnt = cv2.contourArea(cnt)
     areaBox = cv2.contourArea(box)
     valid = areaCnt / areaBox > 0.95
@@ -215,7 +217,7 @@ def extract_card(img, output_fn=None, min_focus=120, debug=False):
         cnta = cnt.reshape(1, -1, 2).astype(np.float32)
         # Apply the transformation 'Mp' to the contour
         cntwarp = cv2.perspectiveTransform(cnta, Mp)
-        cntwarp = cntwarp.astype(np.int)
+        cntwarp = cntwarp.astype(int)
 
         # We build the alpha channel so that we have transparency on the
         # external border of the card
@@ -248,8 +250,10 @@ def extract_card(img, output_fn=None, min_focus=120, debug=False):
     return valid, imgwarp
 
 # Test on one image
-debug=False
-img=cv2.imread("dataset_data/card_dataset/res_medium_size_medium/card1.jpg")
+debug=True
+"""
+
+img=cv2.imread("dataset_data/card_dataset/res_medium_size_medium/card1.jpeg")
 display_img(img)
 valid,card=extract_card(img,"test/extracted_card.png", debug=debug)
 if valid:
@@ -257,29 +261,19 @@ if valid:
 if debug:
     cv2.waitKey(0)
     cv2.destroyAllWindows()
-
 """
-video_dir = "data/video"
-extension = "avi"
-imgs_dir = "data/cards"
 
-for suit in card_suits:
-    for value in card_values:
 
-        card_name = value + suit
-        video_fn = os.path.join(video_dir, card_name + "." + extension)
-        output_dir = os.path.join(imgs_dir, card_name)
-        if not os.path.isdir(output_dir):
-            os.makedirs(output_dir)
-        imgs = extract_cards_from_video(video_fn, output_dir)
-        print("Extracted images for %s : %d" % (card_name, len(imgs)))
 
 # Run a few times...
-imgs_dir="data/cards"
-imgs_fns=glob(imgs_dir+"/*/*.png")
+imgs_dir="dataset_data/card_dataset/res_medium_size_medium"
+imgs_fns=glob(imgs_dir+"/*.jpeg")
 img_fn=random.choice(imgs_fns)
+print(img_fn)
 display_img(cv2.imread(img_fn,cv2.IMREAD_UNCHANGED),polygons=[refCornerHL,refCornerLR])
-
+cv2.waitKey(0)
+cv2.destroyAllWindows()
+"""
 
 def findHull(img, corner=refCornerHL, debug="no"):
     ""
@@ -291,7 +285,7 @@ def findHull(img, corner=refCornerHL, debug="no"):
     ""
 
     kernel = np.ones((3, 3), np.uint8)
-    corner = corner.astype(np.int)
+    corner = corner.astype(int)
 
     # We will focus on the zone of 'img' delimited by 'corner'
     x1 = int(corner[0][0])
