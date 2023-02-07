@@ -68,8 +68,8 @@ image_filename = 'card2'
 image_path = 'example_cards/' + image_filename + '.jpg'
 img = cv2.imread(image_path, cv2.IMREAD_COLOR)
 img = preprocess_image(img)
-#plt.imshow(img)
-#plt.show()
+plt.imshow(img)
+plt.show()
 contours, hierarchy = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 draw = cv2.drawContours(img, contours, -1, (0,255,0), 3)
 
