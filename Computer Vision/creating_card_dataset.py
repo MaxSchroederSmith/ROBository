@@ -22,10 +22,10 @@ mpl_use('MacOSX')
 
 cardW=57
 cardH=87
-cornerXmin=3
-cornerXmax=10.7
-cornerYmin=3
-cornerYmax=24
+cornerXmin=2
+cornerXmax=11
+cornerYmin=2
+cornerYmax=26
 
 # We convert the measures from mm to pixels: multiply by an arbitrary factor 'zoom'
 # You shouldn't need to change this
@@ -402,21 +402,21 @@ hullLR=findHull(img,refCornerLR,debug=debug)
 display_img(img,[refCornerHL,refCornerLR,hullHL,hullLR])
 
 if debug!="no": cv2.destroyAllWindows()
-
-
 """
-imgs_dir="data/cards"
+
+
+imgs_dir="dataset_data/card_dataset/res_medium_size_medium"
 
 cards={}
 for suit in card_suits:
     for value in card_values:
-        card_name=value+suit
+        card_name=value+suit+""
         card_dir=os.path.join(imgs_dir,card_name)
-        if not os.path.isdir(card_dir):
-            print(f"!!! {card_dir} does not exist !!!")
-            continue
-        cards[card_name]=[]
-        for f in glob(card_dir+"/*.png"):
+        #if not os.path.isdir(card_dir):
+        #    print(f"!!! {card_dir} does not exist !!!")
+        #    continue
+        #cards[card_name]=[]
+        for f in glob(card_dir+"/*.jpeg"):
             img=cv2.imread(f,cv2.IMREAD_UNCHANGED)
             hullHL=findHull(img,refCornerHL,debug="no")
             if hullHL is None:
