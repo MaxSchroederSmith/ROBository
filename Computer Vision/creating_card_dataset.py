@@ -355,7 +355,7 @@ def findHull(img, corner=refCornerHL, debug="no"):
         hull_area = cv2.contourArea(hull)
         # If the area of the hull is to small or too big, there may be a problem
         min_hull_area = 1500  # TWEAK, deck and 'zoom' dependant
-        max_hull_area = 2120  # TWEAK, deck and 'zoom' dependant
+        max_hull_area = 2520  # TWEAK, deck and 'zoom' dependant
         if hull_area < min_hull_area or hull_area > max_hull_area:
             ok = False
             if debug != "no":
