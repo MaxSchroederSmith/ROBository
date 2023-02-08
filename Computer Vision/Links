@@ -5,5 +5,13 @@ Original: https://github.com/EdjeElectronics/OpenCV-Playing-Card-Detector
 
 CARD DIMENSIONS:
 
-Height: 8.6 cm (86mm) 
-Width: 5.6 cm (56mm)
+#OLD: Height: 8.6 cm (86mm) 
+#OLD: Width: 5.6 cm (56mm)
+
+-------------------------------
+cardW=57
+cardH=87
+cornerXmin=2
+cornerXmax=11
+cornerYmin=2
+cornerYmax=26
