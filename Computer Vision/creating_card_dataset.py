@@ -180,7 +180,7 @@ def extract_card(img, output_fn=None, min_focus=120, debug=False):
     gray = cv2.bilateralFilter(gray, 11, 17, 17)
 
     # Edge extraction
-    edge = cv2.Canny(gray, 800, 200)
+    edge = cv2.Canny(gray, 750, 200)
 
     # Find the contours in the edged image
     cnts, _ = cv2.findContours(edge.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -349,16 +349,17 @@ def findHull(img, corner=refCornerHL, debug="no"):
             cv2.imshow("Strange contours", strange_cnt)
 
     if concat_contour is not None:
+        print("CONTOUR FOUND")
         # At this point, we suppose that 'concat_contour' contains only the contours corresponding the value and suit symbols
         # We can now determine the hull
         hull = cv2.convexHull(concat_contour)
         hull_area = cv2.contourArea(hull)
         # If the area of the hull is to small or too big, there may be a problem
-        min_hull_area = 1500  # TWEAK, deck and 'zoom' dependant
-        max_hull_area = 2520  # TWEAK, deck and 'zoom' dependant
+        min_hull_area = 10  # TWEAK, deck and 'zoom' dependant
+        max_hull_area = 4000  # TWEAK, deck and 'zoom' dependant
         if hull_area < min_hull_area or hull_area > max_hull_area:
             ok = False
-            if debug != "no":
+            if debug == "no":
                 print("Hull area=", hull_area, "too large or too small")
         # So far, the coordinates of the hull are relative to 'zone'
         # We need the coordinates relative to the image -> 'hull_in_img'
@@ -385,50 +386,60 @@ def findHull(img, corner=refCornerHL, debug="no"):
     return hull_in_img
 
 
-# Test find_hull on a random card image
-# debug = "no" or "pause_always" or "pause_on_pb"
-# If debug!="no", you may have to press a key to continue execution after pause
+def test():
+    # Test find_hull on a random card image
+    # debug = "no" or "pause_always" or "pause_on_pb"
+    # If debug!="no", you may have to press a key to continue execution after pause
+    debug="pause_always"
+    imgs_dir="dataset_data/card_dataset/res_medium_size_medium"
+    imgs_fns=glob(imgs_dir+"/*.jpeg")
+    img_fn=random.choice(imgs_fns)
+    img_fn=imgs_dir+"/Ks.jpeg"
+    print(img_fn)
+    img=cv2.imread(img_fn)
+    valid,card=extract_card(img,"extracted_card.png", debug=debug)
+    img=cv2.imread("extracted_card.png")
+
+    hullHL=findHull(img,refCornerHL,debug=debug)
+    hullLR=findHull(img,refCornerLR,debug=debug)
+    display_img(img,[refCornerHL,refCornerLR,hullHL,hullLR])
+
+    if debug!="no": cv2.destroyAllWindows()
+
+test()
+
+imgs_dir="dataset_data/card_dataset/res_medium_size_medium"
 debug="pause_always"
-imgs_dir="dataset_data/card_dataset/res_medium_size_medium"
-imgs_fns=glob(imgs_dir+"/*.jpeg")
-img_fn=random.choice(imgs_fns)
-print(img_fn)
-img=cv2.imread(img_fn)
-valid,card=extract_card(img,"extracted_card.png", debug=debug)
-img=cv2.imread("extracted_card.png")
-
-hullHL=findHull(img,refCornerHL,debug=debug)
-hullLR=findHull(img,refCornerLR,debug=debug)
-display_img(img,[refCornerHL,refCornerLR,hullHL,hullLR])
-
-if debug!="no": cv2.destroyAllWindows()
-"""
-
-
-imgs_dir="dataset_data/card_dataset/res_medium_size_medium"
-
 cards={}
 for suit in card_suits:
     for value in card_values:
-        card_name=value+suit+""
+        card_name=value+suit
         card_dir=os.path.join(imgs_dir,card_name)
+        card_dir+=".jpeg"
         #if not os.path.isdir(card_dir):
         #    print(f"!!! {card_dir} does not exist !!!")
         #    continue
-        #cards[card_name]=[]
-        for f in glob(card_dir+"/*.jpeg"):
-            img=cv2.imread(f,cv2.IMREAD_UNCHANGED)
-            hullHL=findHull(img,refCornerHL,debug="no")
-            if hullHL is None:
-                print(f"File {f} not used.")
-                continue
-            hullLR=findHull(img,refCornerLR,debug="no")
-            if hullLR is None:
-                print(f"File {f} not used.")
-                continue
-            # We store the image in "rgb" format (we don't need opencv anymore)
-            img=cv2.cvtColor(img,cv2.COLOR_BGRA2RGBA)
-            cards[card_name].append((img,hullHL,hullLR))
+        cards[card_name]=[]
+        print(card_dir)
+        img=cv2.imread(card_dir)
+        extracted_dir = "dataset_data/card_dataset/extracted_cards/" + card_name + "_extracted_card.png"
+        valid, card = extract_card(img, extracted_dir, debug=debug)
+        print(extracted_dir)
+        img = cv2.imread(extracted_dir)
+        hullHL=findHull(img,refCornerHL,debug=debug)
+        if hullHL is None:
+            print(f"File {card_dir} not used.")
+            continue
+        print("hullHL found")
+        hullLR=findHull(img,refCornerLR,debug=debug)
+        if hullLR is None:
+            display_img(img, [refCornerHL, refCornerLR, hullHL])
+            print(f"File {card_dir} not used.")
+            continue
+        print("hullHR found")
+        # We store the image in "rgb" format (we don't need opencv anymore)
+        img=cv2.cvtColor(img,cv2.COLOR_BGRA2RGBA)
+        cards[card_name].append((img,hullHL,hullLR))
         print(f"Nb images for {card_name} : {len(cards[card_name])}")
 
 
@@ -438,7 +449,7 @@ pickle.dump(cards,open(cards_pck_fn,'wb'))
 
 cv2.destroyAllWindows()
 
-
+"""
 class Cards():
     def __init__(self, cards_pck_fn=cards_pck_fn):
         self._cards = pickle.load(open(cards_pck_fn, 'rb'))
