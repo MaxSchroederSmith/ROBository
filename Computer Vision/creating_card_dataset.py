@@ -394,7 +394,7 @@ def test():
     imgs_dir="dataset_data/card_dataset/res_medium_size_medium"
     imgs_fns=glob(imgs_dir+"/*.jpeg")
     img_fn=random.choice(imgs_fns)
-    img_fn=imgs_dir+"/8h.jpeg"
+    img_fn=imgs_dir+"/Ks.jpeg"
     print(img_fn)
     img=cv2.imread(img_fn)
     valid,card=extract_card(img,"extracted_card.png", debug=debug)
