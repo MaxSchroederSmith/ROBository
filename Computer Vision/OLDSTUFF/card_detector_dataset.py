@@ -16,54 +16,59 @@ from glob import glob
 import imgaug as ia
 from imgaug import augmenters as iaa
 from shapely.geometry import Polygon
-mpl_use('MacOSX')
 
+mpl_use('MacOSX')
 
 #
 # GLOBAL VARIABLES
 #
-cardW=57
-cardH=87
-cornerXmin=2
-cornerXmax=11
-cornerYmin=2
-cornerYmax=26
+cardW = 57
+cardH = 87
+cornerXmin = 2
+cornerXmax = 11
+cornerYmin = 2
+cornerYmax = 26
 
 # We convert the measures from mm to pixels: multiply by an arbitrary factor 'zoom'
-zoom=4
-cardW*=zoom
-cardH*=zoom
-cornerXmin=int(cornerXmin*zoom)
-cornerXmax=int(cornerXmax*zoom)
-cornerYmin=int(cornerYmin*zoom)
-cornerYmax=int(cornerYmax*zoom)
+zoom = 4
+cardW *= zoom
+cardH *= zoom
+cornerXmin = int(cornerXmin * zoom)
+cornerXmax = int(cornerXmax * zoom)
+cornerYmin = int(cornerYmin * zoom)
+cornerYmax = int(cornerYmax * zoom)
 
-card_suits=['s','h','d','c']
-card_values=['A','K','Q','J','10','9','8','7','6','5','4','3','2']
+card_suits = ['s', 'h', 'd', 'c']
+card_values = ['A', 'K', 'Q', 'J', '10', '9', '8', '7', '6', '5', '4', '3', '2']
 
-imgs_dir="pi_cards" # Directory that will contain all the card images
-#cards_pck_fn=data_dir+"/cards.pck" # Pickle file containing the card images
+imgs_dir = "pi_cards"  # Directory that will contain all the card images
+# cards_pck_fn=data_dir+"/cards.pck" # Pickle file containing the card images
 
 # imgW,imgH: dimensions of the generated dataset images
-imgW=720
-imgH=720
+imgW = 720
+imgH = 720
 
-refCard=np.array([[0,0],[cardW,0],[cardW,cardH],[0,cardH]],dtype=np.float32)
-refCardRot=np.array([[cardW,0],[cardW,cardH],[0,cardH],[0,0]],dtype=np.float32)
-refCornerHL=np.array([[cornerXmin,cornerYmin],[cornerXmax,cornerYmin],[cornerXmax,cornerYmax],[cornerXmin,cornerYmax]],dtype=np.float32)
-refCornerLR=np.array([[cardW-cornerXmax,cardH-cornerYmax],[cardW-cornerXmin,cardH-cornerYmax],[cardW-cornerXmin,cardH-cornerYmin],[cardW-cornerXmax,cardH-cornerYmin]],dtype=np.float32)
-refCorners=np.array([refCornerHL,refCornerLR])
+refCard = np.array([[0, 0], [cardW, 0], [cardW, cardH], [0, cardH]], dtype=np.float32)
+refCardRot = np.array([[cardW, 0], [cardW, cardH], [0, cardH], [0, 0]], dtype=np.float32)
+refCornerHL = np.array(
+    [[cornerXmin, cornerYmin], [cornerXmax, cornerYmin], [cornerXmax, cornerYmax], [cornerXmin, cornerYmax]],
+    dtype=np.float32)
+refCornerLR = np.array([[cardW - cornerXmax, cardH - cornerYmax], [cardW - cornerXmin, cardH - cornerYmax],
+                        [cardW - cornerXmin, cardH - cornerYmin], [cardW - cornerXmax, cardH - cornerYmin]],
+                       dtype=np.float32)
+refCorners = np.array([refCornerHL, refCornerLR])
 
 # Extraction of the cards from pictures
-bord_size=2 # bord_size alpha=0
-alphamask=np.ones((cardH,cardW),dtype=np.uint8)*255
-cv2.rectangle(alphamask,(0,0),(cardW-1,cardH-1),0,bord_size)
-cv2.line(alphamask,(bord_size*3,0),(0,bord_size*3),0,bord_size)
-cv2.line(alphamask,(cardW-bord_size*3,0),(cardW,bord_size*3),0,bord_size)
-cv2.line(alphamask,(0,cardH-bord_size*3),(bord_size*3,cardH),0,bord_size)
-cv2.line(alphamask,(cardW-bord_size*3,cardH),(cardW,cardH-bord_size*3),0,bord_size)
-plt.figure(figsize=(10,10))
+bord_size = 2  # bord_size alpha=0
+alphamask = np.ones((cardH, cardW), dtype=np.uint8) * 255
+cv2.rectangle(alphamask, (0, 0), (cardW - 1, cardH - 1), 0, bord_size)
+cv2.line(alphamask, (bord_size * 3, 0), (0, bord_size * 3), 0, bord_size)
+cv2.line(alphamask, (cardW - bord_size * 3, 0), (cardW, bord_size * 3), 0, bord_size)
+cv2.line(alphamask, (0, cardH - bord_size * 3), (bord_size * 3, cardH), 0, bord_size)
+cv2.line(alphamask, (cardW - bord_size * 3, cardH), (cardW, cardH - bord_size * 3), 0, bord_size)
+plt.figure(figsize=(10, 10))
 plt.imshow(alphamask)
+
 
 class Train_ranks:
     """Structure to store information about train rank images."""
@@ -93,31 +98,33 @@ def load_ranks(filepath):
 
     return train_ranks
 
-def display_img(img,polygons=[],channels="bgr",size=9):
+
+def display_img(img, polygons=[], channels="bgr", size=9):
     """
         Function to display an inline image, and draw optional polygons (bounding boxes, convex hulls) on it.
         Use the param 'channels' to specify the order of the channels ("bgr" for an image coming from OpenCV world)
     """
-    if not isinstance(polygons,list):
-        polygons=[polygons]
-    if channels=="bgr": # bgr (cv2 image)
-        nb_channels=img.shape[2]
-        if nb_channels==4:
-            img=cv2.cvtColor(img,cv2.COLOR_BGRA2RGBA)
+    if not isinstance(polygons, list):
+        polygons = [polygons]
+    if channels == "bgr":  # bgr (cv2 image)
+        nb_channels = img.shape[2]
+        if nb_channels == 4:
+            img = cv2.cvtColor(img, cv2.COLOR_BGRA2RGBA)
         else:
-            img=cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
-    fig,ax=plt.subplots(figsize=(size,size))
-    ax.set_facecolor((0,0,0))
-    cv2.imshow("IMAGE",img)
-    #plt.show()
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    fig, ax = plt.subplots(figsize=(size, size))
+    ax.set_facecolor((0, 0, 0))
+    cv2.imshow("IMAGE", img)
+    # plt.show()
     for polygon in polygons:
         # An polygon has either shape (n,2),
         # either (n,1,2) if it is a cv2 contour (like convex hull).
         # In the latter case, reshape in (n,2)
-        if len(polygon.shape)==3:
-            polygon=polygon.reshape(-1,2)
-        patch=patches.Polygon(polygon,linewidth=1,edgecolor='g',facecolor='none')
+        if len(polygon.shape) == 3:
+            polygon = polygon.reshape(-1, 2)
+        patch = patches.Polygon(polygon, linewidth=1, edgecolor='g', facecolor='none')
         ax.add_patch(patch)
+
 
 def give_me_filename(dirname, suffixes, prefix=""):
     """
@@ -151,6 +158,7 @@ def give_me_filename(dirname, suffixes, prefix=""):
     else:
         return fnames
 
+
 def varianceOfLaplacian(img):
     """
     Compute the Laplacian of the image and then return the focus
@@ -158,6 +166,7 @@ def varianceOfLaplacian(img):
     Source: A.Rosebrock, https://www.pyimagesearch.com/2015/09/07/blur-detection-with-opencv/
     """
     return cv2.Laplacian(img, cv2.CV_64F).var()
+
 
 def extract_card(img, output_fn=None, min_focus=20, debug=False):
     """
@@ -178,7 +187,7 @@ def extract_card(img, output_fn=None, min_focus=20, debug=False):
     gray = cv2.bilateralFilter(gray, 11, 17, 17)
 
     # Edge extraction
-    edge = cv2.Canny(gray, 20, 200, L2gradient = True)
+    edge = cv2.Canny(gray, 20, 200, L2gradient=True)
 
     # Find the contours in the edged image
     cnts, _ = cv2.findContours(edge.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -192,10 +201,10 @@ def extract_card(img, output_fn=None, min_focus=20, debug=False):
     imgwarp = cv2.rotate(imgwarp, cv2.ROTATE_90_CLOCKWISE)
     graywarp = cv2.cvtColor(imgwarp, cv2.COLOR_BGR2GRAY)
     inverse = cv2.bitwise_not(graywarp)
-    inverse = controller(inverse,contrast =200)
+    inverse = controller(inverse, contrast=200)
 
     # Save the image to file
-    #if output_fn is not None:
+    # if output_fn is not None:
     cv2.imwrite("test.jpg", inverse)
     valid = True
 
@@ -255,6 +264,7 @@ def controller(img, brightness=255,
                               cal, 0, Gamma)
 
     return cal
+
 
 def findHull(img, corner=refCornerHL, debug="no"):
     """
@@ -354,36 +364,39 @@ def findHull(img, corner=refCornerHL, debug="no"):
 
     return hull_in_img
 
-img_fn = imgs_dir+"/1_3d.jpg"
+
+img_fn = imgs_dir + "/1_3d.jpg"
 debug = "pause_always"
-img=cv2.imread(img_fn)
+img = cv2.imread(img_fn)
 
 print(img.shape)
 y = img.shape[0]
 x = img.shape[1]
-y1 = int(y/3) -20
-y2 = int(2*y/3)+20
-x1 = int(x/3)-20
-x2 = int(2*x/3)+20
+y1 = int(y / 3) - 20
+y2 = int(2 * y / 3) + 20
+x1 = int(x / 3) - 20
+x2 = int(2 * x / 3) + 20
 img = img[y1:y2, x1:x2]
 
 display_img(img)
 
-valid,extracted=extract_card(img,"test.jpg", debug=debug)
+valid, extracted = extract_card(img, "test.jpg", debug=debug)
 
+if valid:
+    cv2.imshow("extraction", extracted)
+else:
+    print("Not working")
 
-if valid: cv2.imshow("extraction",extracted)
-else: print("Not working")
-
-#display_img(hullHL)
-#cv2.waitKey(50)
+# display_img(hullHL)
+# cv2.waitKey(50)
 
 train_ranks = load_ranks('card_imgs/')
 RANK_DIFF_MAX = 5000
 RANK_WIDTH = 70
 RANK_HEIGHT = 125
 
-def match(extracted,train_ranks):
+
+def match(extracted, train_ranks):
     best_rank_match_diff = 10000
     best_rank_match_name = "Unknown"
     extracted = cv2.resize(extracted, (RANK_WIDTH, RANK_HEIGHT), 0, 0)
@@ -401,6 +414,7 @@ def match(extracted,train_ranks):
     if (best_rank_match_diff < RANK_DIFF_MAX):
         best_rank_match_name = best_rank_name
     return best_rank_match_name, best_rank_match_diff
+
 
 best_rank_match, rank_diff = match(extracted, train_ranks)
 
