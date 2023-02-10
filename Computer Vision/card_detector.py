@@ -30,7 +30,6 @@ RANK_HEIGHT = 125
 
 class Train_ranks:
     """Structure to store information about train rank images."""
-
     def __init__(self):
         self.img = []  # Thresholded, sized rank image loaded from hard drive
         self.name = "Placeholder"
@@ -180,7 +179,7 @@ def match(extracted, train_ranks):
     return best_rank_match_name, best_rank_match_diff
 
 
-img_fn = imgs_dir + "/1_10h.jpg"
+img_fn = imgs_dir + "/1_Ks.jpg"
 img = cv2.imread(img_fn)  # VALIDATE THIS INCASE READING WRONG
 img = crop_image(img)  # MAYBE WANT TO VALIDATE THIS AS WELL?
 valid, extracted_rank = extract_rank(img, "test.jpg")
