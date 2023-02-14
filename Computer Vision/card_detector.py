@@ -3,21 +3,6 @@
 #
 import numpy as np
 import cv2
-import os
-from tqdm import tqdm
-import random
-import os
-import matplotlib.pyplot as plt
-import matplotlib.image as mpimg
-import matplotlib.patches as patches
-from matplotlib import use as mpl_use
-import pickle
-from glob import glob
-import imgaug as ia
-from imgaug import augmenters as iaa
-from shapely.geometry import Polygon
-
-mpl_use('MacOSX')
 
 #
 # GLOBAL VARIABLES
@@ -80,12 +65,15 @@ def extract_rank(img, output_fn=None, min_focus=20, debug=False):
 
     # Convert in gray color
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    save_image("2grayscaled", gray)
 
     # Noise-reducing and edge-preserving filter
     gray = cv2.bilateralFilter(gray, 11, 17, 17)
+    save_image("3noise-reduced", gray)
 
     # Edge extraction
     edge = cv2.Canny(gray, 20, 200, L2gradient=True)
+    save_image("4edge_extracted", edge)
 
     # Find the contours in the edged image
     cnts, _ = cv2.findContours(edge.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -96,20 +84,18 @@ def extract_rank(img, output_fn=None, min_focus=20, debug=False):
 
     # Fill rank with solid colour
     img = cv2.fillPoly(img, pts=[cnt], color=(0, 0, 0))
+    save_image("5rank_filled", img)
 
     # Extract bounding box around rank
     x, y, w, h = cv2.boundingRect(cnt)
     extract = img[y:y + h, x:x + w]
     rotate = cv2.rotate(extract, cv2.ROTATE_90_CLOCKWISE)
+    save_image("6rank_extracted", rotate)
     # Manipulating for better background/foreground contrast
     grayscale = cv2.cvtColor(rotate, cv2.COLOR_BGR2GRAY)
     inverse = cv2.bitwise_not(grayscale)
     contrasted = modify_brightness_contrast(inverse, contrast=200)
-
-    # todo Save the extracted image into the card_imgs file
-    # DOESN'T KNOW WHAT THE SUIT IS YET THO????
-    # FUNCTION LATER ON SORTING INTO CORRECT FOLDER??
-    cv2.imwrite("extracted_suit.jpg", contrasted)
+    save_image("7rank_extracted_manipulated", contrasted)
 
     # todo SORT OUT VALIDATION
     valid = True
@@ -178,11 +164,22 @@ def match(extracted, train_ranks):
         best_rank_match_name = best_rank_name
     return best_rank_match_name, best_rank_match_diff
 
+def display(name, img):
+    cv2.imshow(name,img)
+    cv2.waitKey(50)
+
+def save_image(name, img):
+    cv2.imwrite(name+".jpg", img)
+
 
 img_fn = imgs_dir + "/1_Ks.jpg"
 img = cv2.imread(img_fn)  # VALIDATE THIS INCASE READING WRONG
 img = crop_image(img)  # MAYBE WANT TO VALIDATE THIS AS WELL?
+save_image("1cropped",img)
 valid, extracted_rank = extract_rank(img, "test.jpg")
+# todo Save the extracted image into the card_imgs file
+# DOESN'T KNOW WHAT THE SUIT IS YET THO????
+# FUNCTION LATER ON SORTING INTO CORRECT FOLDER??
 train_ranks = load_ranks('card_imgs/')
 best_rank_match, rank_diff = match(extracted_rank, train_ranks)
 
