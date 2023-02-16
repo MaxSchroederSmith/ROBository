@@ -4,6 +4,7 @@ class Hand:
     def __init__(self):
         self.cards = []
         self.value = 0
+        self.cards2 = []
 
     def add_card(self):
         card = input("what was the card dealt? ").upper()
@@ -11,6 +12,15 @@ class Hand:
             print("not a valid card ")
             card = input("what was the card dealt? ").upper()
         self.cards.append(card)
+
+    def split(self):
+        self.cards2.append(self.cards[0])
+        self.cards.pop()
+
+    def splitable(self):
+        if self.cards[0] == self.cards[1] and len(self.cards)==2 and len(self.cards2)==0:
+            return True
+        return False
 
     def calc_hand(self):
         self.value = 0
@@ -31,15 +41,14 @@ class Hand:
 
     def reset_hand(self):
         self.cards = []
+        self.cards2 = []
 
-
-def hit_validation(player_no):
-    hit = input("player "+str(player_no)+" would you like another card, Y or N? ").upper()
-    while hit!= "Y" and hit!="N":
-        print("you did not input Y or N.")
-        hit = input("player "+str(player_no)+" would you like another card, Y or N? ").upper()
-    return hit
-
+    def show_hand(self):
+        print("Your hand is ", end = "")
+        for card in self.cards:
+            print(card, end = " ")
+        print("")
+"""
 while True:
     No_of_players = int(input("How many players? "))
     players_score = []
@@ -80,7 +89,7 @@ while True:
         else:
             print("Dealer beat player "+str(i+1))
     print("")
-
+"""
     
         
         
