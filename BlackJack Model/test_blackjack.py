@@ -22,7 +22,7 @@ def test_split(monkeypatch: MonkeyPatch):
     assert hand.cards == ["A"]
     assert hand.cards2 == ["A"]
 
-def test_split_same_value(monkeypatch: MonkeyPatch):
+def test_splitable_same_value(monkeypatch: MonkeyPatch):
     inputs = ["10","J"]
     monkeypatch.setattr("builtins.input", lambda _: inputs.pop(0))
     hand = Hand()
