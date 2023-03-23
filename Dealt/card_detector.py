@@ -3,7 +3,10 @@
 #
 # IMPORTS
 #
+from grove.grove_ws2813_rgb_led_strip import GroveWS2813RgbStrip
+from rpi_ws281x import Color
 from picamera import PiCamera
+import time
 from time import sleep
 import numpy as np
 import cv2
@@ -11,7 +14,7 @@ import cv2
 #
 # GLOBAL VARIABLES
 #
-camera = PiCamera()
+#camera = PiCamera()
 imgs_dir = "example_cards"  # Directory that will contain all the card images
 output_dir = "output"
 rank_dataset_dir = "rank_dataset/"
@@ -20,6 +23,28 @@ RANK_DIFF_MAX = 5000
 RANK_WIDTH = 70
 RANK_HEIGHT = 125
 
+lights = True
+PIN, COUNT = 18,60
+try:
+    strip = GroveWS2813RgbStrip(PIN, COUNT)
+except:
+    lights = False
+
+def init_camera():
+    global camera
+    camera = PiCamera()
+    
+def allOn(strip, wait_ms=10000):
+    color = Color(255,255,255)
+    for i in range(0, strip.numPixels()):
+        strip.setPixelColor(i, color)
+        strip.show()
+        
+def allOff(strip):
+    color = Color(0,0,0)
+    for i in range(0, strip.numPixels()):
+        strip.setPixelColor(i, color)
+        strip.show()
 
 class Train_ranks:
     """Structure to store information about train rank images."""
@@ -90,9 +115,14 @@ def extract_rank(img, output_fn=None, min_focus=20, debug=False):
     
     # if cnts empty not valid
 
-    # We suppose that the contour with largest area corresponds to the contour delimiting the card
-    # MOST CENTERED CONTOUR???
-    cnt = sorted(cnts, key=cv2.contourArea, reverse=True)[0]
+    # We suppose that the 2 contours with largest area corresponds to the contour delimiting the card
+    cnts = sorted(cnts, key=cv2.contourArea, reverse=True)[0:2]
+    minimum_x = 1000000000000
+    for contour in cnts:
+        if cv2.boundingRect(contour)[0] < minimum_x:
+            # Out of the 2 largest contours, one on the left will be the rank
+            cnt = contour
+            minimum_x = cv2.boundingRect(contour)[1]
 
     # Fill rank with solid colour
     img = cv2.fillPoly(img, pts=[cnt], color=(0, 0, 0))
@@ -182,25 +212,34 @@ def display(name, img):
 def save_image(name, img):
     cv2.imwrite(output_dir + "/" + name + ".jpg", img)
 
-#img_fn = imgs_dir + "/1_Ks.jpg"
-#img = cv2.imread(img_fn)  # VALIDATE THIS INCASE READING WRONG
+def main(debug=False):
+    #img_fn = imgs_dir + "/1_Ks.jpg"
+    #img = cv2.imread(img_fn)  # VALIDATE THIS INCASE READING WRONG
 
-#camera.start_preview()
-capture_dir = output_dir+'/pi_card.jpg'
-camera.capture(capture_dir)
-sleep(2)
-camera.close()
-#camera.stop_preview()
+    if not debug:
+        #camera.start_preview()
+        if lights:
+            allOn(strip)
+        init_camera()
+        capture_dir = output_dir+'/pi_card.jpg'
+        camera.capture(capture_dir)
+        sleep(1)
+        camera.close()
+        #camera.stop_preview()
+        if lights:
+            allOff(strip)
+        img = cv2.imread(capture_dir)
+        
+    #img = cv2.imread("output/pi_card.jpg")
+    img = crop_image(img)  # MAYBE WANT TO VALIDATE THIS AS WELL?
+    save_image("1cropped",img)
+    valid, extracted_rank = extract_rank(img, "test.jpg")
+    # todo Save the extracted image into the card_imgs file
+    # DOESN'T KNOW WHAT THE SUIT IS YET THO????
+    # FUNCTION LATER ON SORTING INTO CORRECT FOLDER??
 
-img = cv2.imread(capture_dir)
-img = crop_image(img)  # MAYBE WANT TO VALIDATE THIS AS WELL?
-save_image("1cropped",img)
-valid, extracted_rank = extract_rank(img, "test.jpg")
-# todo Save the extracted image into the card_imgs file
-# DOESN'T KNOW WHAT THE SUIT IS YET THO????
-# FUNCTION LATER ON SORTING INTO CORRECT FOLDER??
-
-train_ranks = load_ranks(rank_dataset_dir)
-best_rank_match, rank_diff = match(extracted_rank, train_ranks)
-
-print(best_rank_match)
+    train_ranks = load_ranks(rank_dataset_dir)
+    best_rank_match, rank_diff = match(extracted_rank, train_ranks)
+    
+    return best_rank_match
+#print(main())

@@ -5,17 +5,22 @@ class Hand:
     def __init__(self):
         self.cards = []
         self.value = 0
-        self.cards2 = []
+        self.player = None
+        
+    def set_player(self, player):
+        self.player = player
 
     def add_card(self, card):
         self.cards.append(RANKS[computer_vision_ranks.index(card)])
 
     def split(self):
-        self.cards2.append(self.cards[0])
+        hand2 = Hand()
+        hand2.cards.append(self.cards[0])
         self.cards.pop()
+        return hand2
 
     def splitable(self):
-        if self.cards[0] == self.cards[1] and len(self.cards)==2 and len(self.cards2)==0:
+        if self.cards[0] == self.cards[1] and len(self.cards)==2:
             return True
         return False
 
@@ -38,12 +43,12 @@ class Hand:
 
     def reset_hand(self):
         self.cards = []
-        self.cards2 = []
+
 
     def show_hand(self):
-        print("Your hand is ", end = "")
+        print("Your hand is ")
         for card in self.cards:
-            print(card, end = " ")
+            print(card)
         print("")
 """
 while True:

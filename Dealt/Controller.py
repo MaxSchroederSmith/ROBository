@@ -5,14 +5,138 @@ import select
 import re
 import datetime
 import blackjack
-from computer_vision import card_detector
+import card_detector
+import bluetooth_manager
 
 acceptable_inputs = ["Hit","Stand","Split"]
 
+class Player:
+    def __init__(self):
+        hand = blackjack.Hand()
+        hand.set_player(self)
+        self.hands = [hand]
+        self.score = []
+        self.hands_won = 0
+        self.hands_won_total = 0
+        
+
+
+
+    
+def init_game(game_no):
+    no_players = int(input("How many players? "))
+    global players
+    players = []    
+    for i in range(no_players):
+        players.append(Player())
+        
+    global dealer
+    dealer = blackjack.Hand()
+    
+    print("Game "+str(game_no))
+    print("")
+    deal_starting_hands()
+
+def deal_starting_hands():
+    print("Dealer")
+    dealer.reset_hand()
+    give_card(dealer,False)
+    give_card(dealer,True)
+    print("Enter to Continue")
+    input("")
+    for i,player in enumerate(players):
+        player.hands[0].reset_hand()
+        split = False
+        print("Player " + str((i+1)))
+        give_card(player.hands[0],False)
+        give_card(player.hands[0],False)
+        player.hands[0].show_hand()
+        
+
+def play_game():
+    
+    for player in players:
+        play_hand(player.hands[0])
+    
+    play_hand_dealer(dealer)
+    
+    
+
+def play_hand(hand):
+    if hand.splitable():
+        print("hit, stand or split?")
+        line = bluetooth_manager.recieveData()
+        if "Split" in str(line):
+            newHand = hand.split()
+            hand.player.hands.append(newHand)
+            play_split(hand.player)
+    else:
+        
+        while hand.calc_hand() <= 21:
+            print("hit or stand?")
+            line = readline()
+            if "Hit" in str(line):
+                give_card(hand,False)
+                hand.show_hand()
+                if hand.calc_hand() > 21:
+                    break
+                
+            elif "Stand" in str(line):
+                break
+            elif "Split" in str(line):
+                print("you can't split.")
+    hand.player.score.append(hand.calc_hand())
+    if hand.calc_hand() > 21:
+        print("Player 1 went bust as they got "+str(hand.calc_hand()))
+    else:
+        print("Player 1 got a hand value of "+str(hand.calc_hand()))
+    print("")
+
+
+
+def play_hand_dealer(dealer):
+    dealer.show_hand()
+    while dealer.calc_hand() < 17:
+        give_card(dealer,False)
+        if dealer.calc_hand() > 21:
+            print("Dealer went bust as they got "+str(dealer.calc_hand()))
+        else:
+            print("Dealer got a hand value of "+str(dealer.calc_hand()))
+
+    
+    
+def play_split(player):
+    for i, hand in enumerate(player.hands):
+        print("Player Hand "+str(i+1))
+        give_card(hand, False)
+        hand.show_hand()
+        print("hit or stand?")
+        line = readline()
+        while hand.calc_hand() <= 21:
+            if "Hit" in str(line):
+                give_card(hand,False)
+                hand.show_hand()
+                if hand.calc_hand() > 21:
+                    break
+                print("hit or stand?")
+                line = readline()
+            elif "Stand" in str(line):
+                break
+            elif "Split" in str(line):
+                print("you can't split. Hit or stand?")
+                line = readline()
+        if hand.calc_hand() > 21:
+            print("Player Hand "+str(i+1)+" went bust as they got "+str(hand.calc_hand()))
+        else:
+            print("Player Hand "+str(i+1)+" got a hand value of "+str(hand.calc_hand()))
+        print("")
+        
+    
+    
 def readline():
     current_time = get_current_time()
     internal_line = p.stdout.readline()
-    while not any(substring in str(internal_line) for substring in acceptable_inputs) or current_time > datetime.datetime.strptime(re.search("..-.. ..:..:..",str(internal_line)).group(),'%m-%d %H:%M:%S'):
+    while not any(substring in str(internal_line) for substring in acceptable_inputs) or current_time > datetime.datetime.strptime(re.search(".. ..:..:..",str(internal_line)).group(),'%d %H:%M:%S'):
         internal_line = p.stdout.readline()
         #print(internal_line)
  
@@ -22,14 +146,18 @@ def readline():
 def get_current_time():
     getdatetime = subprocess.Popen("adb shell date",shell=True,stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     (getdatetimereadlines, err) = getdatetime.communicate()
-    regex = re.search("... [0-9]+ ..:..:..",str(getdatetimereadlines)).group()
-    internal_current_time = datetime.datetime.strptime(regex,"%b  %d %H:%M:%S")
+    regex = re.search("[0-9]+ ..:..:..",str(getdatetimereadlines)).group()
+    internal_current_time = datetime.datetime.strptime(regex,"%d %H:%M:%S")
     return internal_current_time
 
-def give_card(player):
+def give_card(player, flip):
     player.add_card(card_detector.main())
-    shoot_card()
-    
+    if not flip:
+        shootCard.shoot_card_no_flip()
+    else:
+        shootCard.shoot_card_flip()
+            
+
 
     
 
@@ -38,112 +166,31 @@ def give_card(player):
 # subprocess.run('C:\\Users\\Max\\AppData\\Local\\Android\\Sdk\\platform-tools\\adb.exe shell am start -n "com.example.androidapp/com.example.myapplication.MainActivity" -a android.intent.action.MAIN -c android.intent.category.LAUNCHER',shell=True)
 subprocess.Popen('adb shell am start -n "com.example.androidapp/com.example.blackjack2.MainActivity" -a android.intent.action.MAIN -c android.intent.category.LAUNCHER',shell=True,stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 p = subprocess.Popen("adb -d logcat System.out:I *:S",shell=True,stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-def main():
-
-    player = blackjack.Hand()
-    No_of_players = 1#int(input("How many players? "))
-
-    game_no = 1
-
-    print("Game "+str(game_no))
-    print("")
-    players_score = []
-    player.reset_hand()
-    split = False
-    print("Player 1")
-    give_card(player)
-    give_card(player)
-    player.show_hand()
-    if player.splitable():
-        print("hit, stand or split?")
-        line = readline()
-        if "Split" in str(line):
-            player.split()
-            split = True
-    else:
-        print("hit or stand?")
-        line = readline()
-    if split:
-        for i in range(2):
-            print("Player 1 Hand "+str(i+1))
-            give_card(player)
-            player.show_hand()
-            print("hit or stand?")
-            line = readline()
-            while player.calc_hand() <= 21:
-                if "Hit" in str(line):
-                    give_card(player)
-                    player.show_hand()
-                    if player.calc_hand() > 21:
-                        break
-                    print("hit or stand?")
-                    line = readline()
-                elif "Stand" in str(line):
-                    break
-                elif "Split" in str(line):
-                    print("you can't split. Hit or stand?")
-                    line = readline()
-            players_score.append(player.calc_hand())
-            if player.calc_hand() > 21:
-                print("Player 1 Hand "+str(i+1)+" went bust as they got "+str(player.calc_hand()))
+def gameLoop(game_no):
+    game_no = game_no
+    init_game(game_no)
+    play_game()                
+    for i, player in enumerate(players):
+        for j, handScore in enumerate(player.score):
+            
+            if handScore <=21 and (handScore > dealer.calc_hand() or dealer.calc_hand() > 21):
+                print("Player "+str(i)+" hand "+str(j+1)+" beat the dealer")
+            elif handScore <=21 and (handScore == dealer.calc_hand() or dealer.calc_hand() > 21):
+                print("player "+str(i)+" hand "+str(j+1)+" and dealer push")
             else:
-                print("Player 1 Hand "+str(i+1)+" got a hand value of "+str(player.calc_hand()))
-            print("")
-            player.cards = player.cards2
-                
-    else:
-        while player.calc_hand() <= 21:
-            if "Hit" in str(line):
-                give_card(player)
-                player.show_hand()
-                if player.calc_hand() > 21:
-                    break
-                print("hit or stand?")
-                line = readline()
-            elif "Stand" in str(line):
-                break
-            elif "Split" in str(line):
-                print("you can't split. Hit or stand?")
-                line = readline()
-                
-        players_score.append(player.calc_hand())
-        if player.calc_hand() > 21:
-            print("Player 1 went bust as they got "+str(player.calc_hand()))
-        else:
-            print("Player 1 got a hand value of "+str(player.calc_hand()))
-        print("")
-
-    if not(all(score>21 for score in players_score)):
-        print("Dealer")
-        player.reset_hand()
-        give_card(player)
-        give_card(player)
-        while player.calc_hand() < 17:
-            give_card(player)
-        if player.calc_hand() > 21:
-            print("Dealer went bust as they got "+str(player.calc_hand()))
-        else:
-            print("Dealer got a hand value of "+str(player.calc_hand()))
+                print("Dealer beat player 1 hand "+str(j+1))
     print("")
-    if split:
-        for i in range(No_of_players):
-            for j in range(2):
-                if players_score[j] <=21 and (players_score[j] > player.calc_hand() or player.calc_hand() > 21):
-                    print("Player 1 hand "+str(j+1)+" beat the dealer")
-                elif players_score[j] <=21 and (players_score[j] == player.calc_hand() or player.calc_hand()>21):
-                    print("player 1 hand "+str(j+1)+" and dealer push")
-                else:
-                    print("Dealer beat player 1 hand "+str(j+1))
-    else:
-        for i in range(No_of_players):
-            if players_score[0] <=21 and (players_score[0] > player.calc_hand() or player.calc_hand() > 21):
-                print("Player 1 beat the dealer")
-            elif players_score[0] <=21 and (players_score[0] == player.calc_hand() or player.calc_hand()>21):
-                print("player 1 and dealer push")
-            else:
-                print("Dealer beat player 1")
-    print("")
-    game_no+=1
-
-main()
+    input("")
+    return True
     
+    
+    
+def main():
+    bluetooth_manager.init_bt()
+    game_no = 1
+    nextHand = gameLoop(game_no)
+    while nextHand:
+        game_no += 1
+        gameLoop(game_no)
+    
+main()
