@@ -10,6 +10,7 @@ import time
 from time import sleep
 import numpy as np
 import cv2
+import re
 
 #
 # GLOBAL VARIABLES
@@ -61,7 +62,7 @@ def load_ranks(filepath):
     i = 0
 
     for Rank in ['Ace', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven',
-                 'Eight', 'Nine', 'Ten', 'Jack', 'Queen', 'King']:
+                 'Eight', 'Nine', 'Ten', 'Jack', 'Queen', 'King','Eight1','King1','Six1','Ten2','Nine1','Queen1']:#,'Ten1','Ten2','Ten3','Queen4','Eight1','Six1','Three1']:
         train_ranks.append(Train_ranks())
         train_ranks[i].name = Rank
         filename = Rank + '.jpg'
@@ -75,8 +76,8 @@ def crop_image(image):
     y = image.shape[0]
     x = image.shape[1]
 
-    y1 = int(y / 3) - 20
-    y2 = int(2 * y / 3) + 20
+    y1 = int(y / 5)
+    y2 = y-y1
     x1 = int(x / 3) - 20
     x2 = int(2 * x / 3) + 20
 
@@ -188,7 +189,7 @@ def modify_brightness_contrast(img, brightness=255,
 
 
 def match(extracted, train_ranks):
-    best_rank_match_diff = 10000
+    best_rank_match_diff =10000
     best_rank_match_name = "Unknown"
     extracted = cv2.resize(extracted, (RANK_WIDTH, RANK_HEIGHT), 0, 0)
     i = 0
@@ -241,5 +242,8 @@ def main(debug=False):
     train_ranks = load_ranks(rank_dataset_dir)
     best_rank_match, rank_diff = match(extracted_rank, train_ranks)
     
+    pattern = r'[0-9]'
+    best_rank_match = re.sub(pattern, '', best_rank_match)
+    
     return best_rank_match
-#print(main())
+print(main())

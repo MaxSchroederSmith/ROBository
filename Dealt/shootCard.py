@@ -27,7 +27,7 @@ def load_tray():
     mc.move_motor(2,-35)
     mc.move_motor(1,-45)
     
-    while time() < start_time + 0.8:
+    while time() < start_time + 0.7:
         sleep(0.1)
     mc.stop_motor(1)
     
@@ -158,3 +158,5 @@ def shoot_card2():
 #load_tray()
 
 #flip_eject()
+
+#shoot_card_no_flip()
